@@ -1,0 +1,160 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Model {
+  id          Int    @id @default(autoincrement())
+  model_title String @db.VarChar(45)
+  model_class String @db.Char(1)
+  Brand_id    Int
+
+  @@index([Brand_id], map: "Brand_id")
+}
+
+model Admin {
+  id                 Int     @id @default(autoincrement())
+  admin_fullName     String  @db.Char(100)
+  admin_passportInfo String  @db.VarChar(60)
+  admin_status       Int     @db.TinyInt
+  count_of_orders    Int
+  admin_salary       Int
+  Order              Order[]
+}
+
+model Auto {
+  id             Int              @id @default(autoincrement())
+  vin            BigInt
+  Brand_id       Int
+  Order_has_Auto Order_has_Auto[]
+
+  @@index([Brand_id], map: "Brand_id")
+}
+
+model BRAND {
+  id          Int    @id @default(autoincrement())
+  brand_title String @db.VarChar(45)
+}
+
+model Client {
+  id                  Int     @id @default(autoincrement())
+  client_fullName     String  @db.Char(100)
+  client_email        String  @db.VarChar(40)
+  phone               Int
+  client_count_orders Int
+  Order               Order[]
+}
+
+model Detail {
+  id                 Int                 @id @default(autoincrement())
+  detail_name        String              @db.Char(100)
+  detail_description String              @db.VarChar(150)
+  Tool_has_Detail    Tool_has_Detail[]
+  Worker_has_Detail  Worker_has_Detail[]
+}
+
+model Order {
+  id             Int              @id @default(autoincrement())
+  status         Int              @db.TinyInt
+  price          Int
+  info           String           @db.VarChar(250)
+  Client_id      Int
+  Admin_id       Int
+  Client         Client           @relation(fields: [Client_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_ibfk_1")
+  Admin          Admin            @relation(fields: [Admin_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_ibfk_2")
+  Order_has_Auto Order_has_Auto[]
+  Task           Task[]
+
+  @@index([Admin_id], map: "Admin_id")
+  @@index([Client_id], map: "Client_id")
+}
+
+model Order_has_Auto {
+  Order_id Int
+  Auto_id  Int
+  Order    Order @relation(fields: [Order_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_has_auto_ibfk_1")
+  Auto     Auto  @relation(fields: [Auto_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "order_has_auto_ibfk_2")
+
+  @@id([Order_id, Auto_id])
+  @@index([Auto_id], map: "Auto_id")
+}
+
+model Report {
+  id                 Int    @id @default(autoincrement())
+  report_information String @db.VarChar(150)
+  Task_id            Int    @unique(map: "unique_task_id")
+  Task               Task   @relation(fields: [Task_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "report_ibfk_1")
+}
+
+model Role {
+  id               Int      @id @default(autoincrement())
+  role_name        String   @db.VarChar(25)
+  role_description String?  @db.VarChar(255)
+  Worker           Worker[]
+}
+
+model Task {
+  id                Int                 @id @default(autoincrement())
+  task_status       Int                 @db.TinyInt
+  task_description  String              @db.VarChar(150)
+  task_deadline     DateTime            @db.DateTime(0)
+  Order_id          Int
+  Report            Report?
+  Order             Order               @relation(fields: [Order_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "task_ibfk_1")
+  Worker_has_Detail Worker_has_Detail[]
+
+  @@index([Order_id], map: "Order_id")
+}
+
+model Tool {
+  id               Int               @id @default(autoincrement())
+  tool_name        String            @db.VarChar(45)
+  tool_description String            @db.VarChar(150)
+  Tool_has_Detail  Tool_has_Detail[]
+  Worker           Worker[]
+}
+
+model Tool_has_Detail {
+  Tool_id   Int
+  Detail_id Int
+  Tool      Tool   @relation(fields: [Tool_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "tool_has_detail_ibfk_1")
+  Detail    Detail @relation(fields: [Detail_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "tool_has_detail_ibfk_2")
+
+  @@id([Tool_id, Detail_id])
+  @@index([Detail_id], map: "Detail_id")
+}
+
+model Worker {
+  id                  Int                 @id @default(autoincrement())
+  worker_fullName     String              @db.VarChar(25)
+  worker_passportInfo String              @db.VarChar(45)
+  worker_status       Int                 @db.TinyInt
+  count_of_tasks      Int
+  worker_salary       Int
+  Role_id             Int
+  Tool_id             Int
+  Role                Role                @relation(fields: [Role_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "worker_ibfk_1")
+  Tool                Tool                @relation(fields: [Tool_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "worker_ibfk_2")
+  Worker_has_Detail   Worker_has_Detail[]
+
+  @@index([Role_id], map: "Role_id")
+  @@index([Tool_id], map: "Tool_id")
+}
+
+model Worker_has_Detail {
+  Worker_id  Int
+  Detail_id  Int
+  Task_id    Int
+  task_ready DateTime @db.DateTime(0)
+  Detail     Detail   @relation(fields: [Detail_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "worker_has_detail_ibfk_1")
+  Worker     Worker   @relation(fields: [Worker_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "worker_has_detail_ibfk_2")
+  Task       Task     @relation(fields: [Task_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "worker_has_detail_ibfk_3")
+
+  @@id([Worker_id, Detail_id, Task_id])
+  @@index([Detail_id], map: "Detail_id")
+  @@index([Task_id], map: "Task_id")
+}
